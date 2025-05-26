@@ -133,7 +133,14 @@ const LoginPage = () => {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-2">
+              <button
+                onClick={() => navigate('/forgot-password')}
+                className="text-sm text-blue-600 hover:text-blue-700 block w-full"
+              >
+                Forgot your password?
+              </button>
+              
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
                 <button
@@ -143,9 +150,6 @@ const LoginPage = () => {
                   Join our community
                 </button>
               </p>
-              <button className="text-sm text-blue-600 hover:text-blue-700 mt-2">
-                Forgot your password?
-              </button>
             </div>
           </CardContent>
         </Card>
