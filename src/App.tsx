@@ -10,6 +10,10 @@ import RegisterPage from "./components/RegisterPage";
 import ForgotPasswordPage from "./components/ForgotPasswordPage";
 import ResetPasswordPage from "./components/ResetPasswordPage";
 import MemberDashboard from "./components/dashboards/MemberDashboard";
+import AdminDashboard from "./components/dashboards/AdminDashboard";
+import ClergyDashboard from "./components/dashboards/ClergyDashboard";
+import TreasurerDashboard from "./components/dashboards/TreasurerDashboard";
+import SecretaryDashboard from "./components/dashboards/SecretaryDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +31,10 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/dashboard/member" element={<MemberDashboard />} />
+          <Route path="/dashboard/admin" element={<AdminDashboard />} />
+          <Route path="/dashboard/clergy" element={<ClergyDashboard />} />
+          <Route path="/dashboard/treasurer" element={<TreasurerDashboard />} />
+          <Route path="/dashboard/secretary" element={<SecretaryDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

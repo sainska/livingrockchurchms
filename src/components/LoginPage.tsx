@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Church, ArrowLeft, Mail, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -21,36 +22,74 @@ const LoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // Mock role-based routing
-      const mockRole = 'member'; // In real app, this would come from API
-      
-      toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.emailOrPhone,
+        password: formData.password,
       });
 
-      // Route based on role
-      switch (mockRole) {
-        case 'admin':
-          navigate('/dashboard/admin');
-          break;
-        case 'clergy':
-          navigate('/dashboard/clergy');
-          break;
-        case 'treasurer':
-          navigate('/dashboard/treasurer');
-          break;
-        case 'secretary':
-          navigate('/dashboard/secretary');
-          break;
-        default:
-          navigate('/dashboard/member');
+      if (error) {
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Fetch user profile to get role
+        const { data: userProfile, error: profileError } = await supabase
+          .from('users')
+          .select('role, church_id, full_name')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          toast({
+            title: "Error",
+            description: "Failed to fetch user profile",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        toast({
+          title: "Login Successful",
+          description: `Welcome back, ${userProfile.full_name}!`,
+        });
+
+        // Route based on role
+        const role = userProfile.role;
+        switch (role) {
+          case 'admin':
+            navigate('/dashboard/admin');
+            break;
+          case 'clergy':
+            navigate('/dashboard/clergy');
+            break;
+          case 'treasurer':
+            navigate('/dashboard/treasurer');
+            break;
+          case 'secretary':
+            navigate('/dashboard/secretary');
+            break;
+          default:
+            navigate('/dashboard/member');
+        }
       }
       
       setIsLoading(false);
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

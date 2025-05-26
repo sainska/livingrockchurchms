@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Church, ArrowLeft, User, Mail, Phone, Lock, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -36,18 +36,100 @@ const RegisterPage = () => {
       return;
     }
 
+    if (formData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
-    // Simulate API call for member registration
-    setTimeout(() => {
-      toast({
-        title: "Registration Successful",
-        description: "Welcome to our church community! You can now sign in.",
+    try {
+      // Create the user with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            full_name: `${formData.firstName} ${formData.lastName}`,
+          }
+        }
       });
+
+      if (error) {
+        toast({
+          title: "Registration Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Create user profile in our custom users table
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email: formData.email,
+            phone: formData.phone,
+            full_name: `${formData.firstName} ${formData.lastName}`,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            role: 'member',
+            date_of_birth: formData.dateOfBirth || null,
+            gender: formData.gender || null,
+            // For now, we'll need a default church_id or handle church assignment separately
+            // church_id: null // This will need to be handled based on your multi-tenant logic
+          });
+
+        if (profileError) {
+          toast({
+            title: "Profile Creation Failed",
+            description: "Account created but profile setup failed. Please contact support.",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // Create member profile
+        const { error: memberProfileError } = await supabase
+          .from('member_profiles')
+          .insert({
+            user_id: data.user.id,
+            membership_status: 'visitor'
+          });
+
+        if (memberProfileError) {
+          console.error('Member profile creation failed:', memberProfileError);
+          // Don't block registration for this
+        }
+
+        toast({
+          title: "Registration Successful",
+          description: "Welcome to our church community! Please check your email for verification.",
+        });
+        
+        navigate('/login');
+      }
       
-      navigate('/login');
       setIsLoading(false);
-    }, 2000);
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
