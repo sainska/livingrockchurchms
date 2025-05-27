@@ -13,7 +13,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    emailOrPhone: '',
+    email: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -23,10 +23,10 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      console.log('Attempting login with:', formData.emailOrPhone);
+      console.log('Attempting login with:', formData.email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.emailOrPhone,
+        email: formData.email,
         password: formData.password,
       });
 
@@ -44,29 +44,18 @@ const LoginPage = () => {
       if (data.user) {
         console.log('User authenticated, fetching profile for:', data.user.id);
         
-        // Fetch user profile to get role and other details
+        // Fetch user profile from users table
         const { data: userProfile, error: profileError } = await supabase
           .from('users')
           .select('role, church_id, full_name, first_name, last_name')
           .eq('id', data.user.id)
-          .maybeSingle();
+          .single();
 
         if (profileError) {
           console.error('Profile fetch error:', profileError);
           toast({
             title: "Error",
             description: "Failed to fetch user profile. Please try again.",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        if (!userProfile) {
-          console.error('No profile found for user:', data.user.id);
-          toast({
-            title: "Profile Not Found",
-            description: "User profile not found. Please contact support.",
             variant: "destructive",
           });
           setIsLoading(false);
@@ -154,16 +143,16 @@ const LoginPage = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="emailOrPhone">Email or Phone</Label>
+                <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
-                    id="emailOrPhone"
-                    name="emailOrPhone"
-                    type="text"
-                    placeholder="Enter your email or phone number"
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
                     className="pl-10"
-                    value={formData.emailOrPhone}
+                    value={formData.email}
                     onChange={handleInputChange}
                     required
                   />

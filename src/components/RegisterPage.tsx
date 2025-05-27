@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Church, ArrowLeft, User, Mail, Phone, Lock, Calendar, CreditCard } from 'lucide-react';
+import { Church, ArrowLeft, User, Mail, Phone, Lock, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,11 +18,11 @@ const RegisterPage = () => {
     lastName: '',
     email: '',
     phone: '',
-    nationalId: '',
     password: '',
     confirmPassword: '',
     gender: '',
-    dateOfBirth: ''
+    dateOfBirth: '',
+    address: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -47,55 +47,18 @@ const RegisterPage = () => {
       return;
     }
 
-    if (!formData.nationalId) {
-      toast({
-        title: "Error",
-        description: "National ID is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      // Check if national ID already exists
+      // Check if email already exists in our users table
       const { data: existingUser, error: checkError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('national_id', formData.nationalId)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Error checking national ID:', checkError);
-        toast({
-          title: "Error",
-          description: "Failed to validate national ID. Please try again.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      if (existingUser) {
-        toast({
-          title: "Registration Failed",
-          description: "A user with this National ID already exists. Please contact support if this is an error.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // Check if email already exists
-      const { data: existingEmail, error: emailCheckError } = await supabase
         .from('users')
         .select('id')
         .eq('email', formData.email)
         .maybeSingle();
 
-      if (emailCheckError) {
-        console.error('Error checking email:', emailCheckError);
+      if (checkError) {
+        console.error('Error checking email:', checkError);
         toast({
           title: "Error",
           description: "Failed to validate email. Please try again.",
@@ -105,7 +68,7 @@ const RegisterPage = () => {
         return;
       }
 
-      if (existingEmail) {
+      if (existingUser) {
         toast({
           title: "Registration Failed",
           description: "A user with this email already exists. Please use a different email or try logging in.",
@@ -124,10 +87,10 @@ const RegisterPage = () => {
             first_name: formData.firstName,
             last_name: formData.lastName,
             full_name: `${formData.firstName} ${formData.lastName}`,
-            national_id: formData.nationalId,
             phone: formData.phone,
             gender: formData.gender,
-            date_of_birth: formData.dateOfBirth
+            date_of_birth: formData.dateOfBirth,
+            address: formData.address
           }
         }
       });
@@ -150,13 +113,15 @@ const RegisterPage = () => {
             id: data.user.id,
             email: formData.email,
             phone: formData.phone,
-            national_id: formData.nationalId,
             full_name: `${formData.firstName} ${formData.lastName}`,
             first_name: formData.firstName,
             last_name: formData.lastName,
             role: 'member',
             date_of_birth: formData.dateOfBirth || null,
             gender: formData.gender || null,
+            address: formData.address || null,
+            is_active: true,
+            email_verified: false
           });
 
         if (profileError) {
@@ -318,20 +283,15 @@ const RegisterPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nationalId">National ID</Label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="nationalId"
-                    name="nationalId"
-                    type="text"
-                    placeholder="Enter your national ID"
-                    className="pl-10"
-                    value={formData.nationalId}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  name="address"
+                  type="text"
+                  placeholder="Your address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
