@@ -23,12 +23,15 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
+      console.log('Attempting login with:', formData.emailOrPhone);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.emailOrPhone,
         password: formData.password,
       });
 
       if (error) {
+        console.error('Login error:', error);
         toast({
           title: "Login Failed",
           description: error.message,
@@ -39,30 +42,50 @@ const LoginPage = () => {
       }
 
       if (data.user) {
-        // Fetch user profile to get role
+        console.log('User authenticated, fetching profile for:', data.user.id);
+        
+        // Fetch user profile to get role and other details
         const { data: userProfile, error: profileError } = await supabase
           .from('users')
-          .select('role, church_id, full_name')
+          .select('role, church_id, full_name, first_name, last_name')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
 
         if (profileError) {
+          console.error('Profile fetch error:', profileError);
           toast({
             title: "Error",
-            description: "Failed to fetch user profile",
+            description: "Failed to fetch user profile. Please try again.",
             variant: "destructive",
           });
           setIsLoading(false);
           return;
         }
 
+        if (!userProfile) {
+          console.error('No profile found for user:', data.user.id);
+          toast({
+            title: "Profile Not Found",
+            description: "User profile not found. Please contact support.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('User profile fetched:', userProfile);
+
+        const userName = userProfile.full_name || userProfile.first_name || 'User';
+        
         toast({
           title: "Login Successful",
-          description: `Welcome back, ${userProfile.full_name}!`,
+          description: `Welcome back, ${userName}!`,
         });
 
         // Route based on role
         const role = userProfile.role;
+        console.log('Routing user with role:', role);
+        
         switch (role) {
           case 'admin':
             navigate('/dashboard/admin');
@@ -83,6 +106,7 @@ const LoginPage = () => {
       
       setIsLoading(false);
     } catch (error) {
+      console.error('Unexpected login error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
